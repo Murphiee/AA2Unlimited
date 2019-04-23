@@ -219,10 +219,24 @@ DWORD  __declspec(noinline) __stdcall CallOrigLoadXA(DWORD who, void *_this, wch
 }
 
 
+BYTE g_invisibraOverride[256] = { 0 };
+BYTE loc_invisibraOverride;
+CharacterStruct *loc_character;
+
+void setInvisibra() {
+	loc_invisibraOverride =
+		g_boobGravityOverride != 2 ? g_boobGravityOverride :
+		loc_character->m_clothState && ((1 << (loc_character->m_clothState-1)) & g_invisibraOverride[loc_character->m_currClothSlot]) ? 0 : 2;
+}
+
 void __declspec(naked) QueryBoobGravity() {
 	__asm {
-		mov     ebx, [esi+0F84h]
-		mov cl, g_boobGravityOverride
+		pushad
+		mov loc_character, esi
+		call setInvisibra
+		popad
+		mov ebx, [esi+0F84h]
+		mov cl, loc_invisibraOverride
 		test cl, 2
 		jnz no_override
 		mov al, cl
@@ -347,6 +361,10 @@ void HiPolyLoadsInjection() {
 	{ 0x90, 0xe8, HookControl::RELATIVE_DWORD, (DWORD)&QueryEye },	//redirect to our function
 		NULL);
 
+	if (General::IsAAEdit) {
+		// Spawn clothed on preview window by default
+		Hook((BYTE*)(General::GameBase + 0x1A483), { 0x6A, 0x00 }, { 0x6A, 0x01 }, NULL);
+	}
 }
 
 void __stdcall SaveLoadEvent() {

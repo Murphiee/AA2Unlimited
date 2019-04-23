@@ -687,8 +687,21 @@ namespace Shared {
 			}
 			AAPlay::g_characters[seat].m_char->m_charData->m_character.strength = strength % 6;
 		}
-		//int seat, int value
 
+		//int seat, int fightingStyle
+		void Thread::SetCardFightingStyle(std::vector<Value>& params)
+		{
+			int seat = params[0].iVal;
+			if (ActionSeatInvalid(seat)) return;
+			int fightingStyle = params[1].iVal;
+			if (!AAPlay::g_characters[seat].IsValid()) {
+				LOGPRIO(Logger::Priority::WARN) << "[Trigger] Invalid card target; seat number " << seat << "\r\n";
+				return;
+			}
+			AAPlay::g_characters[seat].m_char->m_charData->m_character.fightingStyle = fightingStyle % 3;
+		}
+
+		//int seat, int value
 		void Thread::SetCharacterLocked(std::vector<Value>& params)
 		{
 			int seat = params[0].iVal;
@@ -1348,6 +1361,15 @@ namespace Shared {
 			DWORD* HSceneTrigger = (DWORD*)ExtVars::ApplyRule(offset4);
 			*HSceneTrigger = 1;
 		}
+
+
+		void Thread::SwitchActiveInH(std::vector<Value>& params) {
+			if ((this->eventData->GetId() != H_START) && (this->eventData->GetId() != HPOSITION_CHANGE)) return;
+			auto hInfo = Shared::GameState::getHInfo();
+			hInfo->m_btnSwap->Press();
+		
+		}
+
 
 		//int seat, int status
 		void Thread::SetNpcStatus(std::vector<Value>& params)
@@ -2111,6 +2133,18 @@ namespace Shared {
 				TEXT("Set the room that the NPC will walk to. //Probably doesn't work."),
 				{ TYPE_INT, TYPE_INT },
 				&Thread::SetRoomTarget
+			},
+			{
+				104, ACTIONCAT_MODIFY_CHARACTER, TEXT("Set Fighting Stance"), TEXT("%p ::FightStance = %p"),
+				TEXT("Set character's fighting stance."),
+				{ TYPE_INT, TYPE_INT },
+				&Thread::SetCardFightingStyle
+			},
+			{
+				105, ACTIONCAT_EVENT, TEXT("Switch Dominant"), TEXT("SwitchDominant"),
+				TEXT("Switch who is dominant and submissive in an H scene."),
+				{ },
+				&Thread::SwitchActiveInH
 			},
 		};
 
